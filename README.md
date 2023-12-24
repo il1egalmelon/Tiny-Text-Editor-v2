@@ -2,7 +2,7 @@
 
 Similar idea to Tiny Text Editor, the original one, just written in a less cancerous manner somewhat. It also has a lot of new capabilities that is already implemented and possible expansions in the future if I don't give up on them.
 
-Keybinds: <br>
+# Keybinds: <br>
 Normal mode
 
     I       - Insert mode
@@ -32,3 +32,4 @@ Tab mode
 Global
 
     F1      - Manual refresh
+
