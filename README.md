@@ -33,3 +33,15 @@ Global
 
     F1      - Manual refresh
 
+# Commands: <br>
+
+    new <>  - New tab, <> file path
+    del <>  - Delete a tab, <> tab number
+    res <>  - Set resolution width, <> width number, max for max
+    s       - Saves current file
+    sa      - Saves all files
+    winh <> - Opens a second readonly window, <> file path
+    wind    - Removes the second window on the current tab
+    q!      - Quit with force
+    q       - Quit with save all
+    
