@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Security.Policy;
+using System.Text.RegularExpressions;
 
 class TextEditor {
     public static List<string> lines;
@@ -12,12 +14,15 @@ class TextEditor {
 
     public static int scrollX = 0;
     public static int scrollY = 0;
-    public static int scrollBufferX = 2;
-    public static int scrollBufferY = 2;
+    public static int scrollBufferX = 10;
+    public static int scrollBufferY = 10;
 
     public static string exitstatus = "";
 
     private static bool refresh = false;
+
+    private static List<string> winTwoString = new List<string>();
+    private static int winTwoSizeX = 0;
 
     public static void EditorMain(int whichBuffer, int startX, int startY) {
         lines = MainFunction.buffer[whichBuffer].Split('\n').ToList();
@@ -25,13 +30,15 @@ class TextEditor {
         offsetX = startX;
         offsetY = startY;
 
+        winTwoString.Clear();
+        winTwoString = WindowCompositor.contents[MainFunction.currentWindow].Split('\n').ToList();
+
         while (true) {
             if (MainFunction.windowWidth != TabCompositor.tabX[MainFunction.currentWindow]) {
                 MainFunction.windowWidth = TabCompositor.tabX[MainFunction.currentWindow];
             }
             MainFunction.numberOfWindows = MainFunction.buffer.Count;
 
-            //ClearConsoleColumns(startX, Console.WindowWidth - startX);
             Console.Clear();
 
             MainFunction.windowHeight = Console.WindowHeight;
@@ -42,6 +49,24 @@ class TextEditor {
             CalculateCursor();
 
             PrintWindow(scrollX, scrollY, startX, startY);
+
+            bool haveWin = false;
+            foreach (int win in WindowCompositor.winWhich) {
+                if (win == MainFunction.currentWindow) {
+                    haveWin = true;
+                }
+            }
+
+            string saveString = "";
+            foreach (string str in winTwoString) {
+                saveString += str + "\n";
+            }
+            saveString = saveString.Remove(saveString.Length - 1, 1);
+            WindowCompositor.contents[MainFunction.currentWindow] = saveString;
+
+            if (winTwoSizeX > 0 && haveWin == true) {
+                PrintWindowPlusContent(0, 0, Console.WindowWidth - winTwoSizeX, 0, winTwoString.ToArray());
+            }
 
             PrintStatus();
 
@@ -220,6 +245,8 @@ class TextEditor {
             }
             else if (MainFunction.status == "[Tab]") {
                 switch (key.Key) {
+                    case ConsoleKey.I:
+
                     case ConsoleKey.LeftArrow:
                         exitstatus = "<-";
                         return;
@@ -486,13 +513,14 @@ class TextEditor {
                 File.WriteAllText(command, "");
             }
 
-            MainFunction.buffer.Add(File.ReadAllText(command));
+            MainFunction.buffer.Add(File.ReadAllText(command).Replace("\t", "    "));
             MainFunction.FILEPATH.Add(command);
             MainFunction.cursorX.Add(0);
             MainFunction.cursorY.Add(0);
             MainFunction.posX.Add(0);
             MainFunction.posY.Add(0);
             MainFunction.saved.Add(true);
+            WindowCompositor.contents.Add("");
 
             TabCompositor.NewTab(MainFunction.windowWidth);
         }
@@ -508,6 +536,7 @@ class TextEditor {
                 MainFunction.posX.RemoveAt(index);
                 MainFunction.posY.RemoveAt(index);
                 MainFunction.saved.RemoveAt(index);
+                WindowCompositor.contents.RemoveAt(index);
             }
             catch (Exception ex) {
                 Console.WriteLine(ex.ToString());
@@ -550,6 +579,52 @@ class TextEditor {
                 i++;
             }
         }
+        else if (command == ":winh") {
+            try {
+                command = MainFunction.statusBar.Substring(6);
+
+                MakeNewWindow(File.ReadAllLines(command), Console.WindowWidth / 2);
+            }
+            catch (Exception ex) {
+                Console.WriteLine(ex);
+                Console.ReadKey(true);
+            }
+        }
+        else if (command == ":wind") {
+            RemoveWindow(Console.WindowWidth);
+        }
+        else if (command == ":q!") {
+            MainFunction.statusBar = "Press Y key to quit, all data will be lost";
+
+            //its a miracle that I coded this function decently
+            PrintStatus();
+
+            var key = Console.ReadKey(true).Key;
+
+            if (key == ConsoleKey.Y) {
+                Environment.Exit(0);
+            }
+        }
+        else if (command == ":q") {
+            //save all
+            MainFunction.Save();
+
+            int i = 0;
+            foreach (string filePath in MainFunction.FILEPATH) {
+                File.WriteAllText(filePath, MainFunction.buffer[i]);
+                MainFunction.saved[i] = true;
+
+                i++;
+            }
+
+            //quit
+            Environment.Exit(0);
+        }
+        else {
+            MainFunction.statusBar = "Unknown command";
+            PrintStatus();
+            Console.ReadKey(true);
+        }
 
     outofcmp:
         MainFunction.statusBar = "";
@@ -580,28 +655,81 @@ class TextEditor {
         }
     }
 
-    public static bool FileChecker() {
-        return false;
-    }
-
-    public static void DisplayNewWindow() {
-        string[] displayString = MainFunction.buffer[WindowCompositor.windowX.Count - 1].Split('\n');
-
+    public static void MakeNewWindow(string[] displayString, int wantedSize) {
         for (int i = 0; i < displayString.Length; i++) {
             displayString[i] = displayString[i].Replace("\t", "    ");
         }
 
-        int winToDisplay = WindowCompositor.windowX.Count - 1;
+        winTwoString = displayString.ToList();
+        winTwoSizeX = wantedSize;
 
-        int totalCharToShift = 0;
-        foreach (int window in WindowCompositor.windowX) {
-            totalCharToShift += window;
+        int resize = Console.WindowWidth - wantedSize;
+        TabCompositor.ResizeTab(MainFunction.currentWindow, resize);
+
+        WindowCompositor.AddWindow();
+    }
+
+    public static void RemoveWindow(int restoreSize) {
+        winTwoSizeX = 0;
+        winTwoString.Clear();
+
+        TabCompositor.ResizeTab(MainFunction.currentWindow, restoreSize);
+
+        WindowCompositor.RemoveWindow();
+    }
+}
+
+class Colors {
+    public static void WriteLineColor(string text, string[] keywords, string quoteColor) {
+        foreach (string keyword in keywords) {
+            string[] parts = keyword.Split(' ');
+
+            if (parts.Length == 2) {
+                string color = parts[0].ToLower();
+                string word = parts[1];
+
+                string startTag = GetColorStartTag(color);
+                string endTag = GetColorEndTag();
+
+                string pattern = $@"(?<![a-zA-Z0-9]){Regex.Escape(word)}(?![a-zA-Z0-9])";
+                text = Regex.Replace(text, pattern, $"{startTag}$&{endTag}");
+            }
         }
-        totalCharToShift -= WindowCompositor.windowX[winToDisplay];
 
-        PrintWindowPlusContent(0, 0, totalCharToShift, 0, displayString);
+        string quotePattern = @"(""[^""]*"")|('[^']*')";
+        string quoteStartTag = GetColorStartTag(quoteColor);
+        string quoteEndTag = GetColorEndTag();
 
-        WindowCompositor.createdNewWindow = false;
+        text = Regex.Replace(text, quotePattern, $"{quoteStartTag}$&{quoteEndTag}");
+
+        Console.WriteLine(text);
+    }
+
+    private static string GetColorStartTag(string color) {
+        switch (color.ToLower()) {
+            case "black":
+                return "\u001b[30m";
+            case "red":
+                return "\u001b[31m";
+            case "green":
+                return "\u001b[32m";
+            case "yellow":
+                return "\u001b[33m";
+            case "blue":
+                return "\u001b[34m";
+            case "magenta":
+                return "\u001b[35m";
+            case "cyan":
+                return "\u001b[36m";
+            case "white":
+                return "\u001b[37m";
+            default:
+                return "";
+        }
+    }
+
+    private static string GetColorEndTag() {
+        return "\u001b[0m";
     }
 }
 
@@ -634,64 +762,22 @@ class TabCompositor {
 }
 
 class WindowCompositor {
-    public static List<int> windowX = new List<int>();
-    public static List<string> inputString = new List<string>();
+    public static List<int> winWhich = new List<int>();
+    public static List<string> contents = new List<string>();
 
-    public static bool createdNewWindow = false;
-
-    public static void CheckWindows() {
-        //resize current window to appropriate size
-        MainFunction.windowWidth = windowX[MainFunction.currentWindow];
+    public static void AddWindow() {
+        winWhich.Add(MainFunction.currentWindow);
     }
 
-    public static void StartWindow(int wantedSizeX) {
-        int windowTotalSizeX = Console.WindowWidth;
+    public static void RemoveWindow() {
+        int i = 0;
+        foreach (int win in winWhich) {
+            if (win == MainFunction.currentWindow) {
+                winWhich.RemoveAt(i);
+            }
 
-        if (wantedSizeX > windowTotalSizeX) {
-            throw new Exception("(EE) Invalid window size");
+            i++;
         }
-        else {
-            windowX.Add(wantedSizeX);
-            MainFunction.windowWidth = wantedSizeX;
-        }
-    }
-
-    public static void ShrinkWindow(int index, int wantedSizeX) {
-        windowX[index] = wantedSizeX;
-
-        MainFunction.windowWidth = wantedSizeX;
-    }
-
-    public static void EnlargeWindow(int shrinkWindow, int index, int wantedSizeX) {
-
-    }
-
-    public static void NewWindow(int shrinkWindow, int wantedSizeX) {
-        int windowTotalSizeX = Console.WindowWidth;
-
-        int shrinkBy = windowX[shrinkWindow] - (windowTotalSizeX - wantedSizeX);
-        ShrinkWindow(shrinkWindow, shrinkBy);
-
-        windowX.Add(wantedSizeX);
-
-        createdNewWindow = true;
-    }
-
-    public static void DeleteWindow(int index) {
-        if (index == 0) {
-            throw new Exception("(EE) Cannot delete main window, open new instance instead");
-        }
-
-        int useLater = windowX[index];
-        windowX.RemoveAt(index);
-
-        //enlarge window left to it
-        windowX[index - 1] += useLater;
-
-        MainFunction.buffer.RemoveAt(index);
-        MainFunction.FILEPATH.RemoveAt(index);
-
-        CheckWindows();
     }
 }
 
@@ -769,6 +855,7 @@ class MainFunction {
         Console.Clear();
 
         TabCompositor.NewTab(Console.WindowWidth);
+        WindowCompositor.contents.Add("");
 
         while (true) {
             buffer[currentWindow] = buffer[currentWindow].Replace("\t", "    ");
