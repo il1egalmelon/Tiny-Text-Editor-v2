@@ -47,3 +47,14 @@ Global
     q!      - Quit with force
     q       - Quit with save all
     
+# Todo: <br>
+
+    - Add line numbers
+    - Fix crashes when wrong arguments for some commands
+    - Fix crashes for just random edge cases when editing text I guess (I will just wrap everything in try catch loops, deal with it)
+    - Add text coloring
+    - Add token based coloring
+    - Add a built in command line (debugger)
+    - Add a way to open a window that is the system's command line
+    - Add a way to communicate with external scripts (like LSPs and shit)
+    
