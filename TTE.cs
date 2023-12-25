@@ -2,10 +2,17 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using System.Security.Policy;
 using System.Text.RegularExpressions;
 
+#pragma warning disable CS8618  //non nullable field declared as ?
+#pragma warning disable CS0162  //unreachable code
+#pragma warning disable CS0168  //var declared never used
+#pragma warning disable CS8600  //converting null ref
+#pragma warning disable CS8604  //possible null ref
+
 class TextEditor {
+    public static string decimalCharacters = "0123456789";
+
     public static List<string> lines;
     public static int virtualCursorX = 0;
     public static int virtualCursorY = 0;
@@ -16,6 +23,8 @@ class TextEditor {
     public static int scrollY = 0;
     public static int scrollBufferX = 10;
     public static int scrollBufferY = 10;
+
+    public static int commandBarHeight = 2;
 
     public static string exitstatus = "";
 
@@ -34,6 +43,21 @@ class TextEditor {
         winTwoString = WindowCompositor.contents[MainFunction.currentWindow].Split('\n').ToList();
 
         while (true) {
+            { //new scope
+                int i = 0;
+                foreach (string line in lines.ToArray()) {
+                    lines[i] = line.Replace("\r", "");
+
+                    i++;
+                }
+            }
+
+            string currentLine = lines[MainFunction.cursorY[MainFunction.currentWindow]];
+
+            if (currentLine.Length < MainFunction.cursorX[MainFunction.currentWindow]) {
+                MainFunction.cursorX[MainFunction.currentWindow] = currentLine.Length;
+            } 
+
             if (MainFunction.windowWidth != TabCompositor.tabX[MainFunction.currentWindow]) {
                 MainFunction.windowWidth = TabCompositor.tabX[MainFunction.currentWindow];
             }
@@ -42,9 +66,7 @@ class TextEditor {
             Console.Clear();
 
             MainFunction.windowHeight = Console.WindowHeight;
-            MainFunction.textHeight = MainFunction.windowHeight - 2;
-
-            string currentLine = lines[MainFunction.cursorY[MainFunction.currentWindow]];
+            MainFunction.textHeight = MainFunction.windowHeight - commandBarHeight;
 
             CalculateCursor();
 
@@ -145,7 +167,7 @@ class TextEditor {
 
                     case ConsoleKey.RightArrow:
                         try {
-                            if (MainFunction.cursorX[MainFunction.currentWindow] < currentLine.Length - 1 && currentLine.Length > 1) {
+                            if (MainFunction.cursorX[MainFunction.currentWindow] <= currentLine.Length && currentLine.Length > 1) {
                                 MainFunction.cursorX[MainFunction.currentWindow]++;
                             }
                             else if (currentLine.Length == 1 && MainFunction.cursorX[MainFunction.currentWindow] < currentLine.Length) {
@@ -211,7 +233,7 @@ class TextEditor {
 
                     case ConsoleKey.RightArrow:
                         try {
-                            if (MainFunction.cursorX[MainFunction.currentWindow] < currentLine.Length - 1 && currentLine.Length > 1) {
+                            if (MainFunction.cursorX[MainFunction.currentWindow] <= currentLine.Length && currentLine.Length > 1) {
                                 MainFunction.cursorX[MainFunction.currentWindow]++;
                             }
                             else if (currentLine.Length == 1 && MainFunction.cursorX[MainFunction.currentWindow] < currentLine.Length) {
@@ -246,6 +268,9 @@ class TextEditor {
             else if (MainFunction.status == "[Tab]") {
                 switch (key.Key) {
                     case ConsoleKey.I:
+                        MainFunction.status = "[Insert]";
+
+                        break;
 
                     case ConsoleKey.LeftArrow:
                         exitstatus = "<-";
@@ -273,16 +298,16 @@ class TextEditor {
             if (key.KeyChar == ':' && MainFunction.status == "[Normal]") {
                 MainFunction.statusBar += ":";
                 CommandHandler();
-            } else if (key.Key == ConsoleKey.F1) {
+            }
+            else if (key.Key == ConsoleKey.F1) {
                 MainFunction.windowWidth = Console.WindowWidth;
 
                 refresh = true;
 
                 continue;
             }
-
-            if (lines[MainFunction.cursorY[MainFunction.currentWindow]].Length < MainFunction.cursorX[MainFunction.currentWindow]) {
-                MainFunction.cursorX[MainFunction.currentWindow] = lines[MainFunction.cursorY[MainFunction.currentWindow]].Length - 1;
+            else if (decimalCharacters.Contains(key.KeyChar)) {
+                MultiShift(key.KeyChar.ToString(), currentLine);
             }
         }
     }
@@ -423,6 +448,55 @@ class TextEditor {
         if (MainFunction.cursorY[MainFunction.currentWindow] + offsetY >= MainFunction.textHeight - scrollBufferY) {
             scrollY = MainFunction.cursorY[MainFunction.currentWindow] - MainFunction.textHeight + scrollBufferY + offsetY;
             virtualCursorY = MainFunction.textHeight - scrollBufferY;
+        }
+    }
+
+    public static void MultiShift(string allChar, string currentLine) {
+        while (true) {
+            ConsoleKeyInfo key = Console.ReadKey(true);
+
+            int shift = Convert.ToInt32(allChar);
+            if (decimalCharacters.Contains(key.KeyChar)) {
+                allChar += key.KeyChar;
+            }
+            else if (key.Key == ConsoleKey.LeftArrow) {
+                for (int i = 0; i < shift; i++) {
+                    if (MainFunction.cursorX[MainFunction.currentWindow] > 0) {
+                        MainFunction.cursorX[MainFunction.currentWindow]--;
+                    }
+                }
+                break;
+            }
+            else if (key.Key == ConsoleKey.RightArrow) {
+                for (int i = 0; i < shift; i++) {
+                    if (MainFunction.cursorX[MainFunction.currentWindow] <= currentLine.Length && currentLine.Length > 1) {
+                        MainFunction.cursorX[MainFunction.currentWindow]++;
+                    }
+                    else if (currentLine.Length == 1 && MainFunction.cursorX[MainFunction.currentWindow] < currentLine.Length) {
+                        MainFunction.cursorX[MainFunction.currentWindow]++;
+                    }
+                }
+                break;
+            }
+            else if (key.Key == ConsoleKey.UpArrow) {
+                for (int i = 0; i < shift; i++) {
+                    if (MainFunction.cursorY[MainFunction.currentWindow] > 0) {
+                        MainFunction.cursorY[MainFunction.currentWindow]--;
+                    }
+                }
+                break;
+            }
+            else if (key.Key == ConsoleKey.DownArrow) {
+                for (int i = 0; i < shift; i++) {
+                    if (MainFunction.cursorY[MainFunction.currentWindow] < lines.Count - 1) {
+                        MainFunction.cursorY[MainFunction.currentWindow]++;
+                    }
+                }
+                break;
+            }
+            else {
+                break;
+            }
         }
     }
 
