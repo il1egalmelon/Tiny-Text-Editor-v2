@@ -46,6 +46,7 @@ Global
     wind    - Removes the second window on the current tab
     q!      - Quit with force
     q       - Quit with save all
+    ltog    - Toggle line number display for all tabs
     
 # Todo: <br>
 
