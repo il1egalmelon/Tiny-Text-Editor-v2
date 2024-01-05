@@ -50,7 +50,7 @@ Global
     
 # Todo: <br>
 
-    - Add line numbers
+    - (done) Add line numbers
     - Fix crashes when wrong arguments for some commands
     - Fix crashes for just random edge cases when editing text I guess 
       (I will just wrap everything in try catch loops, deal with it)
