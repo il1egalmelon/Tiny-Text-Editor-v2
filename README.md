@@ -47,6 +47,7 @@ Global
     q!      - Quit with force
     q       - Quit with save all
     ltog    - Toggle line number display for all tabs
+    hl <>   - Sets the highlighter
     
 # Todo: <br>
 
