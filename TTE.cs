@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -26,12 +26,20 @@ class TextEditor {
 
     public static int commandBarHeight = 2;
 
-    public static string exitstatus = "";
+    public static string exitStatus0 = "";  //tab switching
+    public static string exitStatus1 = "";  //line number toggle
+    public static string lastExitStatus1 = "";
+    public static string exitStatus2 = "";
+    public static string exitStatus3 = "";
 
-    private static bool refresh = false;
+    public static bool refresh = false;
 
-    private static List<string> winTwoString = new List<string>();
-    private static int winTwoSizeX = 0;
+    public static List<string> winTwoString = new List<string>();
+    public static int winTwoSizeX = 0;
+
+    public static bool highlighterEnable = false;
+    public static List<string> highlighterKeywords = new List<string>();
+    public static string highlighterQuoteColor = "";
 
     public static void EditorMain(int whichBuffer, int startX, int startY) {
         lines = MainFunction.buffer[whichBuffer].Split('\n').ToList();
@@ -39,11 +47,10 @@ class TextEditor {
         offsetX = startX;
         offsetY = startY;
 
-        winTwoString.Clear();
         winTwoString = WindowCompositor.contents[MainFunction.currentWindow].Split('\n').ToList();
 
         while (true) {
-            { //new scope
+            /*new scope*/ {
                 int i = 0;
                 foreach (string line in lines.ToArray()) {
                     lines[i] = line.Replace("\r", "");
@@ -72,6 +79,14 @@ class TextEditor {
 
             PrintWindow(scrollX, scrollY, startX, startY);
 
+            if (exitStatus1 == "lineshow") {
+                bool status = DisplayLineNumbers();
+
+                if (status == false) {
+                    return;
+                }
+            }
+
             bool haveWin = false;
             foreach (int win in WindowCompositor.winWhich) {
                 if (win == MainFunction.currentWindow) {
@@ -87,7 +102,9 @@ class TextEditor {
             WindowCompositor.contents[MainFunction.currentWindow] = saveString;
 
             if (winTwoSizeX > 0 && haveWin == true) {
-                PrintWindowPlusContent(0, 0, Console.WindowWidth - winTwoSizeX, 0, winTwoString.ToArray());
+                PrintWindowPlusContentWinh(WindowCompositor.scrollX[MainFunction.currentWindow], WindowCompositor.scrollY[MainFunction.currentWindow], Console.WindowWidth - winTwoSizeX + 2, 0, winTwoString.ToArray());
+
+                PrintSeperatorForWindowTwo();
             }
 
             PrintStatus();
@@ -103,6 +120,10 @@ class TextEditor {
             } catch (Exception) { }
 
             var key = Console.ReadKey(true);
+
+            ///////////////
+            //insert mode//
+            ///////////////
 
             if (MainFunction.status == "[Insert]") {
                 switch (key.Key) {
@@ -209,6 +230,11 @@ class TextEditor {
                         break;
                 }
             }
+
+            ///////////////
+            //normal mode//
+            ///////////////
+
             else if (MainFunction.status == "[Normal]") {
                 switch (key.Key) {
                     case ConsoleKey.I:
@@ -218,6 +244,11 @@ class TextEditor {
 
                     case ConsoleKey.T:
                         MainFunction.status = "[Tab]";
+
+                        break;
+
+                    case ConsoleKey.W:
+                        MainFunction.status = "[Window]";
 
                         break;
 
@@ -265,6 +296,11 @@ class TextEditor {
                         break;
                 }
             }
+
+            ////////////
+            //tab mode//
+            ////////////
+
             else if (MainFunction.status == "[Tab]") {
                 switch (key.Key) {
                     case ConsoleKey.I:
@@ -272,20 +308,90 @@ class TextEditor {
 
                         break;
 
+                    case ConsoleKey.W:
+                        MainFunction.status = "[Window]";
+
+                        break;
+
                     case ConsoleKey.LeftArrow:
-                        exitstatus = "<-";
+                        exitStatus0 = "<-";
                         return;
 
                         break;
 
                     case ConsoleKey.RightArrow:
-                        exitstatus = "->";
+                        exitStatus0 = "->";
                         return;
-                        
+
                         break;
 
                     case ConsoleKey.Escape:
                         MainFunction.status = "[Normal]";
+
+                        break;
+                }
+            }
+
+            ///////////////
+            //window mode//
+            ///////////////
+
+            else if (MainFunction.status == "[Window]") {
+                switch (key.Key) {
+                    case ConsoleKey.I:
+                        MainFunction.status = "[Insert]";
+
+                        break;
+
+                    case ConsoleKey.Escape:
+                        MainFunction.status = "[Normal]";
+
+                        break;
+
+                    case ConsoleKey.T:
+                        MainFunction.status = "[Tab]";
+
+                        break;
+
+                    case ConsoleKey.PageDown:
+                        WindowCompositor.scrollY[MainFunction.currentWindow] += MainFunction.textHeight;
+
+                        break;
+
+                    case ConsoleKey.PageUp:
+                        WindowCompositor.scrollY[MainFunction.currentWindow] -= MainFunction.textHeight;
+
+                        if (WindowCompositor.scrollY[MainFunction.currentWindow] < 0) {
+                            WindowCompositor.scrollY[MainFunction.currentWindow] = 0;
+                        }
+
+                        break;
+
+                    case ConsoleKey.LeftArrow:
+                        WindowCompositor.scrollX[MainFunction.currentWindow]--;
+
+                        if (WindowCompositor.scrollX[MainFunction.currentWindow] < 0) {
+                            WindowCompositor.scrollX[MainFunction.currentWindow] = 0;
+                        }
+
+                        break;
+
+                    case ConsoleKey.RightArrow:
+                        WindowCompositor.scrollX[MainFunction.currentWindow]++;
+
+                        break;
+
+                    case ConsoleKey.DownArrow:
+                        WindowCompositor.scrollY[MainFunction.currentWindow]++;
+
+                        break;
+
+                    case ConsoleKey.UpArrow:
+                        WindowCompositor.scrollY[MainFunction.currentWindow]--;
+
+                        if (WindowCompositor.scrollY[MainFunction.currentWindow] < 0) {
+                            WindowCompositor.scrollY[MainFunction.currentWindow] = 0;
+                        }
 
                         break;
                 }
@@ -297,6 +403,8 @@ class TextEditor {
 
             if (key.KeyChar == ':' && MainFunction.status == "[Normal]") {
                 MainFunction.statusBar += ":";
+
+                ReadInputStatusBar();
                 CommandHandler();
             }
             else if (key.Key == ConsoleKey.F1) {
@@ -306,9 +414,19 @@ class TextEditor {
 
                 continue;
             }
-            else if (decimalCharacters.Contains(key.KeyChar)) {
+            else if (decimalCharacters.Contains(key.KeyChar) && MainFunction.status == "[Normal]") {
                 MultiShift(key.KeyChar.ToString(), currentLine);
             }
+
+            ///////////////////////
+            //check exit statuses//
+            ///////////////////////
+
+            if (exitStatus1 != lastExitStatus1) {
+                lastExitStatus1 = exitStatus1;
+            }
+
+            return;
         }
     }
 
@@ -335,15 +453,27 @@ class TextEditor {
 
         for (int i = 0; i < MainFunction.textHeight - startY; i++) {
             Console.SetCursorPosition(startX, printY);
+
+            string bufferForHighlight = "";
             try {
                 for (int j = 0; j < input[i].Length && j < MainFunction.windowWidth; j++) {
-                    Console.Write(input[i][j]);
+                    if (highlighterEnable == false) {
+                        Console.Write(input[i][j]);
+                    } else {
+                        bufferForHighlight += input[i][j];
+                    }
                 }
             }
             catch (Exception e) {
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.WriteLine("~");
-                Console.ResetColor();
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+
+            if (highlighterEnable == true) {
+                Console.BackgroundColor = ConsoleColor.Black;
+                Colors.WriteColor(bufferForHighlight, highlighterKeywords.ToArray(), highlighterQuoteColor);
+                bufferForHighlight = "";
             }
 
             printY++;
@@ -374,19 +504,44 @@ class TextEditor {
         for (int i = 0; i < MainFunction.textHeight - startY; i++) {
             Console.SetCursorPosition(startX, printY);
             try {
-                for (int j = 0; j < input[i].Length && j < MainFunction.windowWidth - scrollBufferX; j++) {
-                    Console.Write(input[i][j]);
-                }
+                Console.Write(input[i + line]);
             }
             catch (Exception e) {
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Console.WriteLine("~");
-                Console.ResetColor();
             }
 
             printY++;
         }
     }
+
+    public static void PrintWindowPlusContentWinh(int column, int line, int startX, int startY, string[] input) {
+        for (int i = 0; i < input.Length; i++) {
+            try {
+                for (int j = 0; j < column; j++) {
+                    input[i] = input[i].Remove(0, 1);
+                }
+            }
+            catch (Exception) { }
+        }
+
+        int printY = startY;
+
+        for (int i = 0; i < MainFunction.textHeight - startY; i++) {
+            Console.SetCursorPosition(startX, printY);
+            try {
+                for (int j = 0; j < input[i + line].Length && j < MainFunction.windowWidth - scrollBufferX; j++) {
+                    Console.Write(input[i + line][j]);
+                }
+            }
+            catch (Exception e) {
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.WriteLine("~");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+
+            printY++;
+        }
+    }
+
 
     public static void PrintAtCoord(int x, int y, string input) {
         Console.SetCursorPosition(x, y);
@@ -569,8 +724,6 @@ class TextEditor {
     }
 
     public static void CommandHandler() {
-        ReadInputStatusBar();
-
         string command = MainFunction.statusBar.Split(' ')[0];
 
         if (command == ":new") {
@@ -658,6 +811,9 @@ class TextEditor {
                 command = MainFunction.statusBar.Substring(6);
 
                 MakeNewWindow(File.ReadAllLines(command), Console.WindowWidth / 2);
+
+                WindowCompositor.scrollX.Add(0);
+                WindowCompositor.scrollY.Add(0);
             }
             catch (Exception ex) {
                 Console.WriteLine(ex);
@@ -694,7 +850,65 @@ class TextEditor {
             //quit
             Environment.Exit(0);
         }
-        else {
+        else if (command == ":ltog") {
+            if (exitStatus1 == "lineshow") {
+                exitStatus1 = "";
+            }
+            else {
+                exitStatus1 = "lineshow";
+            }
+        }
+        else if (command == ":hl") {
+            try {
+                string highlightName = MainFunction.statusBar.Split(' ')[1];
+
+                if (!Directory.Exists("highlighters")) {
+                    Directory.CreateDirectory("highlighters");
+
+                    throw new Exception("no highlighter directory, now created");
+                }
+
+                if (highlightName == "!") {
+                    goto defaultcolor;
+                }
+
+                string[] keywordsAndQuoteColor = File.ReadAllLines("highlighters/" + highlightName);
+
+                highlighterEnable = true;
+                
+                //this is written so much better than TTE-v1
+                highlighterKeywords.Clear();
+
+                foreach (string keyword in keywordsAndQuoteColor) {
+                    string[] tmp0 = keyword.Split(' ');
+
+                    if (tmp0[0] == "quote") {
+                        highlighterQuoteColor = tmp0[1];
+                    }
+                    else {
+                        highlighterKeywords.Add(keyword);
+                    }
+                }
+
+                if (highlighterQuoteColor == "") {
+                    highlighterQuoteColor = "white";
+                }
+
+                MainFunction.statusBar = "Loaded: " + highlightName;
+                PrintStatus();
+                Console.ReadKey(true);
+
+                goto outofcmp;
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+                Console.ReadKey(true);
+            }
+        
+        //default color "subroutine"
+        defaultcolor:
+            highlighterEnable = false;
+        }
+        else if (command != "") {
             MainFunction.statusBar = "Unknown command";
             PrintStatus();
             Console.ReadKey(true);
@@ -705,6 +919,8 @@ class TextEditor {
     }
 
     public static void ReadInputStatusBar() {
+        Console.CursorVisible = false;
+
         while (true) {
             PrintStatus();
             var cc = Console.ReadKey(true);
@@ -713,20 +929,24 @@ class TextEditor {
             if (Char.IsLetterOrDigit(c) || Char.IsPunctuation(c) || Char.IsSymbol(c) || (c == ' ')) {
                 MainFunction.statusBar += c;
             }
-            else if (c == '\b') {
+            else if (cc.Key == ConsoleKey.Backspace) {
                 MainFunction.statusBar = MainFunction.statusBar.Remove(MainFunction.statusBar.Length - 1);
             }
             else if (cc.Key == ConsoleKey.Enter) {
                 break;
             }
             else if (cc.Key == ConsoleKey.Escape) {
-                return;
+                MainFunction.statusBar = "";
+
+                break;
             }
 
             if (MainFunction.statusBar == "") {
-                return;
+                break;
             }
         }
+
+        Console.CursorVisible = true;
     }
 
     public static void MakeNewWindow(string[] displayString, int wantedSize) {
@@ -751,10 +971,31 @@ class TextEditor {
 
         WindowCompositor.RemoveWindow();
     }
+
+    public static bool DisplayLineNumbers() {
+        List<string> ints = new List<string>();
+        int i = 0;
+        foreach (string s in lines) {
+            ints.Add(i.ToString());
+
+            i++;
+        }
+
+        PrintWindowPlusContent(0, scrollY, 0, 0, ints.ToArray());
+
+        return true;
+    }
+
+    public static void PrintSeperatorForWindowTwo() {
+        for (int i = 0; i < MainFunction.textHeight; i++) {
+            Console.SetCursorPosition(MainFunction.windowWidth, i);
+            Console.Write("*");
+        }
+    }
 }
 
 class Colors {
-    public static void WriteLineColor(string text, string[] keywords, string quoteColor) {
+    public static void WriteColor(string text, string[] keywords, string quoteColor) {
         foreach (string keyword in keywords) {
             string[] parts = keyword.Split(' ');
 
@@ -775,8 +1016,9 @@ class Colors {
         string quoteEndTag = GetColorEndTag();
 
         text = Regex.Replace(text, quotePattern, $"{quoteStartTag}$&{quoteEndTag}");
-
-        Console.WriteLine(text);
+        
+        Console.Write(text);
+        Console.BackgroundColor = ConsoleColor.Black;
     }
 
     private static string GetColorStartTag(string color) {
@@ -801,9 +1043,9 @@ class Colors {
                 return "";
         }
     }
-
+    
     private static string GetColorEndTag() {
-        return "\u001b[0m";
+        return "\u001b[0;37;40m";
     }
 }
 
@@ -838,9 +1080,18 @@ class TabCompositor {
 class WindowCompositor {
     public static List<int> winWhich = new List<int>();
     public static List<string> contents = new List<string>();
+    public static List<int> scrollX = new List<int>();
+    public static List<int> scrollY = new List<int>();
 
     public static void AddWindow() {
         winWhich.Add(MainFunction.currentWindow);
+
+        string saveString = "";
+        foreach (string str in TextEditor.winTwoString) {
+            saveString += str + "\n";
+        }
+        saveString = saveString.Remove(saveString.Length - 1, 1);
+        contents[MainFunction.currentWindow] = saveString;
     }
 
     public static void RemoveWindow() {
@@ -848,10 +1099,15 @@ class WindowCompositor {
         foreach (int win in winWhich) {
             if (win == MainFunction.currentWindow) {
                 winWhich.RemoveAt(i);
+
+                break;
             }
 
             i++;
         }
+
+        scrollX.RemoveAt(MainFunction.currentWindow);
+        scrollY.RemoveAt(MainFunction.currentWindow);
     }
 }
 
@@ -876,6 +1132,9 @@ class MainFunction {
     public static string status = "[Normal]";
     public static string statusBar = "";
     public static string commandBar = "";
+
+    public static int lineNumNumberBase = 10;  //default is decimal for line number display
+    public static int spacerForLineNum = 2;
 
     public static void Main(string[] args) {
         Console.ForegroundColor = ConsoleColor.White;
@@ -930,14 +1189,26 @@ class MainFunction {
 
         TabCompositor.NewTab(Console.WindowWidth);
         WindowCompositor.contents.Add("");
+        WindowCompositor.scrollX.Add(0);
+        WindowCompositor.scrollY.Add(0);
 
         while (true) {
             buffer[currentWindow] = buffer[currentWindow].Replace("\t", "    ");
 
+            if (TextEditor.exitStatus1 == "lineshow") {
+                posX[currentWindow] = (TextEditor.scrollY + textHeight - TextEditor.scrollBufferY + 1).ToString().Length + spacerForLineNum;
+            }
+            else {
+                posX[currentWindow] = 0;
+            }
+
             TextEditor.EditorMain(currentWindow, posX[currentWindow], posY[currentWindow]);
 
             Save();
-            Swap();
+
+            if (TextEditor.exitStatus0 == "<-" || TextEditor.exitStatus0 == "->") {
+                Swap();
+            }
         }
     }
 
@@ -952,14 +1223,14 @@ class MainFunction {
     }
 
     public static void Swap() {
-        if (TextEditor.exitstatus == "<-") {
+        if (TextEditor.exitStatus0 == "<-") {
             if (currentWindow == 0) {
             }
             else {
                 currentWindow--;
             }
         } 
-        else if (TextEditor.exitstatus == "->") {
+        else if (TextEditor.exitStatus0 == "->") {
             if (currentWindow + 1 >= buffer.Count) {
             }
             else {
