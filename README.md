@@ -56,7 +56,7 @@ Global
     - Fix crashes for just random edge cases when editing text I guess 
       (I will just wrap everything in try catch loops, deal with it)
     - (done) Add text coloring
-    - Add token based coloring
+    - Add token based coloring (I will let someone else do it, hehe)
     - Add a built in command line (debugger)
     - Add a way to open a window that is the system's command line
     - Add a way to communicate with external scripts (like LSPs and shit)
