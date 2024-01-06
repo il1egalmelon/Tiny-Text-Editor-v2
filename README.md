@@ -55,7 +55,7 @@ Global
     - Fix crashes when wrong arguments for some commands
     - Fix crashes for just random edge cases when editing text I guess 
       (I will just wrap everything in try catch loops, deal with it)
-    - Add text coloring
+    - (done) Add text coloring
     - Add token based coloring
     - Add a built in command line (debugger)
     - Add a way to open a window that is the system's command line
