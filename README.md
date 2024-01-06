@@ -48,6 +48,7 @@ Global
     q       - Quit with save all
     ltog    - Toggle line number display for all tabs
     hl <>   - Sets the highlighter
+    hlw <>  - Sets the highlighter for win2
     
 # Todo: <br>
 
