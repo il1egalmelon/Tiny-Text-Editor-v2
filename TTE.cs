@@ -41,6 +41,10 @@ class TextEditor {
     public static List<string> highlighterKeywords = new List<string>();
     public static string highlighterQuoteColor = "";
 
+    public static bool highlighterWinhEnable = false;
+    public static List<string> highlighterWinhKeywords = new List<string>();
+    public static string highlighterWinhQuoteColor = "";
+
     public static void EditorMain(int whichBuffer, int startX, int startY) {
         lines = MainFunction.buffer[whichBuffer].Split('\n').ToList();
 
@@ -50,6 +54,8 @@ class TextEditor {
         winTwoString = WindowCompositor.contents[MainFunction.currentWindow].Split('\n').ToList();
 
         while (true) {
+            Console.CursorVisible = false;
+
             /*new scope*/ {
                 int i = 0;
                 foreach (string line in lines.ToArray()) {
@@ -119,6 +125,7 @@ class TextEditor {
                 Console.SetCursorPosition(virtualCursorX, virtualCursorY);
             } catch (Exception) { }
 
+            Console.CursorVisible = true;
             var key = Console.ReadKey(true);
 
             ///////////////
@@ -249,6 +256,24 @@ class TextEditor {
 
                     case ConsoleKey.W:
                         MainFunction.status = "[Window]";
+
+                        break;
+
+                    case ConsoleKey.PageDown:
+                        MainFunction.cursorY[MainFunction.currentWindow] += MainFunction.textHeight;
+
+                        if (MainFunction.cursorY[MainFunction.currentWindow] > lines.Count - 1) {
+                            MainFunction.cursorY[MainFunction.currentWindow] = lines.Count - 1;
+                        }
+
+                        break;
+
+                    case ConsoleKey.PageUp:
+                        MainFunction.cursorY[MainFunction.currentWindow] -= MainFunction.textHeight;
+
+                        if (MainFunction.cursorY[MainFunction.currentWindow] < 0) {
+                            MainFunction.cursorY[MainFunction.currentWindow] = 0;
+                        }
 
                         break;
 
@@ -527,15 +552,28 @@ class TextEditor {
 
         for (int i = 0; i < MainFunction.textHeight - startY; i++) {
             Console.SetCursorPosition(startX, printY);
+
+            string bufferForHighlight = "";
             try {
                 for (int j = 0; j < input[i + line].Length && j < MainFunction.windowWidth - scrollBufferX; j++) {
-                    Console.Write(input[i + line][j]);
+                    if (highlighterWinhEnable == false) {
+                        Console.Write(input[i + line][j]);
+                    }
+                    else {
+                        bufferForHighlight += input[i + line][j];
+                    }
                 }
             }
             catch (Exception e) {
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.WriteLine("~");
                 Console.ForegroundColor = ConsoleColor.White;
+            }
+
+            if (highlighterWinhEnable == true) {
+                Console.BackgroundColor = ConsoleColor.Black;
+                Colors.WriteColor(bufferForHighlight, highlighterWinhKeywords.ToArray(), highlighterWinhQuoteColor);
+                bufferForHighlight = "";
             }
 
             printY++;
@@ -908,6 +946,56 @@ class TextEditor {
         defaultcolor:
             highlighterEnable = false;
         }
+        else if (command == ":hlw") {
+            try {
+                string highlightName = MainFunction.statusBar.Split(' ')[1];
+
+                if (!Directory.Exists("highlighters")) {
+                    Directory.CreateDirectory("highlighters");
+
+                    throw new Exception("no highlighter directory, now created");
+                }
+
+                if (highlightName == "!") {
+                    goto defaultcolor;
+                }
+
+                string[] keywordsAndQuoteColor = File.ReadAllLines("highlighters/" + highlightName);
+
+                highlighterWinhEnable = true;
+                
+                //this is written so much better than TTE-v1
+                highlighterWinhKeywords.Clear();
+
+                foreach (string keyword in keywordsAndQuoteColor) {
+                    string[] tmp0 = keyword.Split(' ');
+
+                    if (tmp0[0] == "quote") {
+                        highlighterWinhQuoteColor = tmp0[1];
+                    }
+                    else {
+                        highlighterWinhKeywords.Add(keyword);
+                    }
+                }
+
+                if (highlighterQuoteColor == "") {
+                    highlighterWinhQuoteColor = "white";
+                }
+
+                MainFunction.statusBar = "Loaded: " + highlightName;
+                PrintStatus();
+                Console.ReadKey(true);
+
+                goto outofcmp;
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+                Console.ReadKey(true);
+            }
+        
+        //default color "subroutine"
+        defaultcolor:
+            highlighterWinhEnable = false;
+        } 
         else if (command != "") {
             MainFunction.statusBar = "Unknown command";
             PrintStatus();
@@ -981,14 +1069,16 @@ class TextEditor {
             i++;
         }
 
+        Console.ForegroundColor = ConsoleColor.Yellow;
         PrintWindowPlusContent(0, scrollY, 0, 0, ints.ToArray());
+        Console.ForegroundColor = ConsoleColor.White;
 
         return true;
     }
 
     public static void PrintSeperatorForWindowTwo() {
         for (int i = 0; i < MainFunction.textHeight; i++) {
-            Console.SetCursorPosition(MainFunction.windowWidth, i);
+            Console.SetCursorPosition(Console.WindowWidth - Console.WindowWidth / 2, i);
             Console.Write("*");
         }
     }
@@ -1078,7 +1168,7 @@ class TabCompositor {
 }
 
 class WindowCompositor {
-    public static List<int> winWhich = new List<int>();
+    public static List<int> winWhich = new List<int>();  //this guy is special as it tells which tabs has windows, rather than storing for every tab
     public static List<string> contents = new List<string>();
     public static List<int> scrollX = new List<int>();
     public static List<int> scrollY = new List<int>();
@@ -1095,19 +1185,21 @@ class WindowCompositor {
     }
 
     public static void RemoveWindow() {
-        int i = 0;
-        foreach (int win in winWhich) {
-            if (win == MainFunction.currentWindow) {
-                winWhich.RemoveAt(i);
+        try {
+            int i = 0;
+            foreach (int win in winWhich) {
+                if (win == MainFunction.currentWindow) {
+                    winWhich.RemoveAt(i);
 
-                break;
+                    break;
+                }
+
+                i++;
             }
 
-            i++;
-        }
-
-        scrollX.RemoveAt(MainFunction.currentWindow);
-        scrollY.RemoveAt(MainFunction.currentWindow);
+            scrollX.RemoveAt(MainFunction.currentWindow);
+            scrollY.RemoveAt(MainFunction.currentWindow);
+        } catch (Exception) {}
     }
 }
 
@@ -1195,8 +1287,11 @@ class MainFunction {
         while (true) {
             buffer[currentWindow] = buffer[currentWindow].Replace("\t", "    ");
 
+            bool toggleLineshow = false;
             if (TextEditor.exitStatus1 == "lineshow") {
                 posX[currentWindow] = (TextEditor.scrollY + textHeight - TextEditor.scrollBufferY + 1).ToString().Length + spacerForLineNum;
+                TabCompositor.tabX[MainFunction.currentWindow] -= posX[currentWindow];
+                toggleLineshow = true;
             }
             else {
                 posX[currentWindow] = 0;
@@ -1205,6 +1300,11 @@ class MainFunction {
             TextEditor.EditorMain(currentWindow, posX[currentWindow], posY[currentWindow]);
 
             Save();
+
+            //restore windowWidth
+            if (toggleLineshow == true) {
+                TabCompositor.tabX[MainFunction.currentWindow] += posX[currentWindow];
+            }
 
             if (TextEditor.exitStatus0 == "<-" || TextEditor.exitStatus0 == "->") {
                 Swap();
