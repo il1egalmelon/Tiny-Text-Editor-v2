@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -182,6 +182,24 @@ class TextEditor {
                         SetFalseSaved();
 
                         break;
+
+                    case ConsoleKey.PageDown:
+                        MainFunction.cursorY[MainFunction.currentWindow] += MainFunction.textHeight;
+
+                        if (MainFunction.cursorY[MainFunction.currentWindow] > lines.Count - 1) {
+                            MainFunction.cursorY[MainFunction.currentWindow] = lines.Count - 1;
+                        }
+
+                        break;
+
+                    case ConsoleKey.PageUp:
+                        MainFunction.cursorY[MainFunction.currentWindow] -= MainFunction.textHeight;
+
+                        if (MainFunction.cursorY[MainFunction.currentWindow] < 0) {
+                            MainFunction.cursorY[MainFunction.currentWindow] = 0;
+                        }
+
+                        break; 
 
                     case ConsoleKey.LeftArrow:
                         try {
