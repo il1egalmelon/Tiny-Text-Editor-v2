@@ -38,6 +38,9 @@ Tab mode
 
 Window mode
 
+    ESC     - Normal mode
+    I       - Insert mode
+    T       - Tab mode
     LfArrow - Go left
     RtArrow - Go right
     UpArrow - Go up
