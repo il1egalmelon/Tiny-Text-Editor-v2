@@ -79,4 +79,5 @@ Global
     - Add a built in command line (debugger)
     - Add a way to open a window that is the system's command line
     - Add a way to communicate with external scripts (like LSPs and shit)
+    - Add undo and redo
     
