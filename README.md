@@ -9,11 +9,14 @@ Normal mode
 
     I       - Insert mode
     T       - Tab mode
+    W       - Window mode
     :       - Command mode
     LfArrow - Go left
     RtArrow - Go right
     UpArrow - Go up
     DwArrow - Go down
+    Page Up - Go up by a page
+    Page Dw - Go down by a page
 
 Insert mode
 
@@ -23,6 +26,8 @@ Insert mode
     RtArrow - Go right
     UpArrow - Go up
     DwArrow - Go down
+    Page Up - Go up by a page
+    Page Dw - Go down by a page
 
 Tab mode
 
@@ -30,6 +35,15 @@ Tab mode
     I       - Insert mode
     LfArrow - Go to left tab
     RtArrow - Go to right tab
+
+Window mode
+
+    LfArrow - Go left
+    RtArrow - Go right
+    UpArrow - Go up
+    DwArrow - Go down
+    Page Up - Go up by a page
+    Page Dw - Go down by a page
 
 Global
 
