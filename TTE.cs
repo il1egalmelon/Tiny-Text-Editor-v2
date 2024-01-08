@@ -514,7 +514,6 @@ class TextEditor {
             }
 
             if (highlighterEnable == true) {
-                Console.BackgroundColor = ConsoleColor.Black;
                 Colors.WriteColor(bufferForHighlight, highlighterKeywords.ToArray(), highlighterQuoteColor);
                 bufferForHighlight = "";
             }
@@ -589,7 +588,8 @@ class TextEditor {
             }
 
             if (highlighterWinhEnable == true) {
-                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ResetColor();
+                Console.ForegroundColor = ConsoleColor.White;
                 Colors.WriteColor(bufferForHighlight, highlighterWinhKeywords.ToArray(), highlighterWinhQuoteColor);
                 bufferForHighlight = "";
             }
@@ -757,7 +757,8 @@ class TextEditor {
         Console.ForegroundColor = ConsoleColor.Black;
         PrintAtCoord(x, y, msg);
         Console.ForegroundColor = ConsoleColor.White;
-        Console.BackgroundColor = ConsoleColor.Black;
+        Console.ResetColor();
+        Console.ForegroundColor = ConsoleColor.White;
     }
 
     public static void ClearConsoleLine() {
@@ -779,8 +780,10 @@ class TextEditor {
         Console.SetCursorPosition(currentLeft, currentTop);
     }
 
-    public static void CommandHandler() {
-        string command = MainFunction.statusBar.Split(' ')[0];
+    public static void CommandHandler(string command = "") {
+        if (command == "") {
+            command = MainFunction.statusBar.Split(' ')[0];
+        }
 
         if (command == ":new") {
             try {
@@ -1013,7 +1016,23 @@ class TextEditor {
         //default color "subroutine"
         defaultcolor:
             highlighterWinhEnable = false;
-        } 
+        }
+        else if (command == ":goto") {
+            try {
+                int gotoLine = Convert.ToInt32(MainFunction.statusBar.Split(' ')[1]);
+                if (gotoLine < 0) {
+                    gotoLine = 0;
+                }
+                if (gotoLine > lines.Count - 1) {
+                    gotoLine = lines.Count - 1;
+                }
+
+                MainFunction.cursorY[MainFunction.currentWindow] = gotoLine;
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+                Console.ReadKey(true);
+            }
+        }
         else if (command != "") {
             MainFunction.statusBar = "Unknown command";
             PrintStatus();
@@ -1124,9 +1143,8 @@ class Colors {
         string quoteEndTag = GetColorEndTag();
 
         text = Regex.Replace(text, quotePattern, $"{quoteStartTag}$&{quoteEndTag}");
-        
-        Console.Write(text);
-        Console.BackgroundColor = ConsoleColor.Black;
+
+        Console.Write(text); 
     }
 
     private static string GetColorStartTag(string color) {
@@ -1151,10 +1169,10 @@ class Colors {
                 return "";
         }
     }
-    
+
     private static string GetColorEndTag() {
-        return "\u001b[0;37;40m";
-    }
+        return "\u001b[0m";
+    } 
 }
 
 class TabCompositor {
@@ -1248,7 +1266,8 @@ class MainFunction {
 
     public static void Main(string[] args) {
         Console.ForegroundColor = ConsoleColor.White;
-        Console.BackgroundColor = ConsoleColor.Black;
+        Console.ResetColor();
+        Console.ForegroundColor = ConsoleColor.White;
 
         if (args.Length == 1) {
             FILEPATH.Add(args[0]);
@@ -1302,6 +1321,8 @@ class MainFunction {
         WindowCompositor.scrollX.Add(0);
         WindowCompositor.scrollY.Add(0);
 
+        bool boot = true;
+
         while (true) {
             buffer[currentWindow] = buffer[currentWindow].Replace("\t", "    ");
 
@@ -1313,6 +1334,12 @@ class MainFunction {
             }
             else {
                 posX[currentWindow] = 0;
+            }
+
+            if (boot == true){
+                StartupConfigs();
+
+                boot = false;
             }
 
             TextEditor.EditorMain(currentWindow, posX[currentWindow], posY[currentWindow]);
@@ -1358,5 +1385,21 @@ class MainFunction {
 
         TextEditor.scrollX = 0;
         TextEditor.scrollY = 0;
+    }
+
+    public static void StartupConfigs() {
+        if (!Directory.Exists("configs")) {
+            Directory.CreateDirectory("configs");
+        }
+        if (!File.Exists("configs/startup.txt")) {
+            File.WriteAllText("configs/startup.txt", "");
+        }
+
+        string[] startupCommands = File.ReadAllLines("configs/startup.txt");
+
+        foreach (string startupCmd in startupCommands) {
+            statusBar = startupCmd;
+            TextEditor.CommandHandler();
+        }
     }
 }
