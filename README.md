@@ -4,6 +4,8 @@ Similar idea to Tiny Text Editor, the original one, just written in a less cance
 <br><br>
 When loading a file with tab characters in it, it will replace the tab char with 4 spaces. It will also save as 4 spaces. I only expect you to load texts with single char width characters. Multi width char do not work as the cursor is misaligned. This is why the tab is cleaned to spaces.
 
+Also, please don't use this for production. And, don't load any file that is larger than a few 10k lines long, it will be extremely slow or just not work at all.
+
 # Keybinds: <br>
 Normal mode
 
