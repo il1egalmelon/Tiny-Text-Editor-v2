@@ -82,3 +82,47 @@ Global
     - Add a way to communicate with external scripts (like LSPs and shit)
     - Add undo and redo
     
+# Some features: <br>
+
+Startup:
+
+    In a folder named "config", go to the "startup.txt" file.
+    In there, you can add your own startup command line commands.
+    Every line is one command.
+
+    Example file:
+        :hl c
+        :winh test.c
+        :goto 12
+
+Text highlighting:
+
+    This text editor has a very primative and sort of broken text highlighting feature.
+    Just place your highlighting format file in the folder called "highlight".
+    And you can load up the file in the command line with "highlight {}".
+
+    The formatting for the highlighter file is as follows:
+    {COLOR} {KEYWORD}
+    or 
+    quote {COLOR}
+
+    These are the supported colors: black, red, green, yellow, blue, magenta, cyan, white
+
+    Example file:
+        quote cyan
+        blue char
+        blue short
+        blue int
+        blue long
+        blue float
+        blue double
+        yellow void
+        yellow unsigned
+        yellow const
+        yellow auto
+        red if
+        red else
+        red break
+        red continue
+        red while
+        red for
