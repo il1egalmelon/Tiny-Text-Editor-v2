@@ -66,6 +66,7 @@ Global
     ltog    - Toggle line number display for all tabs
     hl <>   - Sets the highlighter
     hlw <>  - Sets the highlighter for win2
+    goto <> - Goto a line
     
 # Todo: <br>
 
