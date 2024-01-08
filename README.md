@@ -86,7 +86,7 @@ Global
 
 Startup:
 
-    In a folder named "config", go to the "startup.txt" file.
+    In a folder named "configs", go to the "startup.txt" file.
     In there, you can add your own startup command line commands.
     Every line is one command.
 
@@ -98,8 +98,8 @@ Startup:
 Text highlighting:
 
     This text editor has a very primative and sort of broken text highlighting feature.
-    Just place your highlighting format file in the folder called "highlight".
-    And you can load up the file in the command line with "highlight {}".
+    Just place your highlighting format file in the folder called "highlighters".
+    And you can load up the file in the command line with "hl {}".
 
     The formatting for the highlighter file is as follows:
     {COLOR} {KEYWORD}
