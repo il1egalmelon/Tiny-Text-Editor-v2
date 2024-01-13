@@ -6,6 +6,8 @@ When loading a file with tab characters in it, it will replace the tab char with
 
 Also, please don't use this for production. And, don't load any file that is larger than a few 10k lines long, it will be extremely slow or just not work at all.
 
+Help is located in the debugger. Steps: press F2 key, then type "help" or "?"
+
 # Todo: <br>
 
     - (done) Add line numbers
