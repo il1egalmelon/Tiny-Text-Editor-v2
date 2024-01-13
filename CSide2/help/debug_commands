@@ -1,0 +1,5 @@
+?       - Brings up help menu
+help    
+exit    - Quits the debugger
+quit    
+clear   - Clear the history

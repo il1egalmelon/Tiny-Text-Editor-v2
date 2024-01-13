@@ -1,0 +1,6 @@
+In a folder named "configs", go to the "startup.txt" file. In there, you can add your own startup command line commands. Every line is one command.
+
+Example file:
+    :hl c
+    :winh test.c
+    :goto 12
