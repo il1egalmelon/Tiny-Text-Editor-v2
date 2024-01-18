@@ -1,0 +1,45 @@
+Normal mode:
+    I       - Insert mode
+    T       - Tab mode
+    W       - Window mode
+    :       - Command mode
+    /       - Find string
+    LfArrow - Go left
+    RtArrow - Go right
+    UpArrow - Go up
+    DwArrow - Go down
+    Page Up - Go up by a page
+    Page Dw - Go down by a page
+
+Insert mode:
+    ESC     - Normal mode
+    Tab     - Adds 4 spaces, rather than a tab char
+    LfArrow - Go left
+    RtArrow - Go right
+    UpArrow - Go up
+    DwArrow - Go down
+    Page Up - Go up by a page
+    Page Dw - Go down by a page
+
+Tab mode:
+    ESC     - Normal mode
+    I       - Insert mode
+    W       - Window mode
+    LfArrow - Go to left tab
+    RtArrow - Go to right tab
+
+Window mode:
+    ESC     - Normal mode
+    I       - Insert mode
+    T       - Tab mode
+    LfArrow - Go left
+    RtArrow - Go right
+    UpArrow - Go up
+    DwArrow - Go down
+    Page Up - Go up by a page
+    Page Dw - Go down by a page
+    C       - Terminal emulator
+
+Global:
+    F1      - Refresh
+    F2      - Debug menu
